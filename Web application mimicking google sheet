@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Operations</title>
+</head>
+<body>
+    <div>
+        <input type="text" id="formula-input" placeholder="Enter a formula (e.g., SUM(1,2,3))">
+        <button id="submit-formula">Submit</button>
+    </div>
+    <div id="result-display" style="margin-top: 10px; font-weight: bold;"></div>
+
+    <script>
+        // Handle formula submission
+        document.getElementById('submit-formula').addEventListener('click', () => {
+            const formulaInput = document.getElementById('formula-input').value.trim();
+            const resultDisplay = document.getElementById('result-display');
+
+            if (!formulaInput) {
+                resultDisplay.textContent = 'Please enter a formula.';
+                return;
+            }
+
+            try {
+                // Parse and evaluate the formula
+                const result = evalFormula(formulaInput);
+                resultDisplay.textContent = `Result: ${result}`;
+            } catch (error) {
+                resultDisplay.textContent = 'Invalid formula! Please use a valid mathematical expression.';
+            }
+        });
+
+        // Function to evaluate a formula
+        function evalFormula(formula) {
+            const args = parseArgs(formula);
+
+            if (formula.startsWith('SUM(')) {
+                return args.reduce((a, b) => a + b, 0);
+            } else if (formula.startsWith('AVERAGE(')) {
+                return args.reduce((a, b) => a + b, 0) / args.length;
+            } else if (formula.startsWith('MAX(')) {
+                return Math.max(...args);
+            } else if (formula.startsWith('MIN(')) {
+                return Math.min(...args);
+            } else if (formula.startsWith('COUNT(')) {
+                return args.length;
+            } else {
+                throw new Error('Unsupported function');
+            }
+        }
+
+        // Helper function to parse arguments from the formula
+        function parseArgs(formula) {
+            const argsStr = formula.slice(formula.indexOf('(') + 1, formula.indexOf(')'));
+            const args = argsStr.split(',').map(arg => parseFloat(arg.trim()));
+
+            if (args.some(isNaN)) {
+                throw new Error('Invalid arguments');
+            }
+
+            return args;
+        }
+    </script>
+</body>
+</html>
