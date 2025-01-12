@@ -3,65 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Operations</title>
+    <title>Google Sheets Mimic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #formula-bar {
+            padding: 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #formula-input {
+            width: 100%;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        #sheet-container {
+            overflow: auto;
+            margin: 10px;
+        }
+
+        #sheet {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #sheet td, #sheet th {
+            border: 1px solid #ddd;
+            width: 100px;
+            height: 30px;
+            text-align: left;
+            padding: 5px;
+        }
+
+        #sheet td {
+            background-color: #fff;
+        }
+
+        #sheet td.selected {
+            background-color: #cce5ff;
+        }
+    </style>
 </head>
 <body>
-    <div>
+  <select id="data-type">
+    <option value="text">Text</option>
+    <option value="number">Number</option>
+    <option value="date">Date</option>
+</select>
+
+    <div id="toolbar">
+        <!-- Styling buttons -->
+        <button id="bold">Bold</button>
+        <button id="italic">Italic</button>
+        <button id="underline">Underline</button>
+        <select id="font-size">
+            <option value="12">12px</option>
+            <option value="14">14px</option>
+            <option value="16">16px</option>
+            <option value="18">18px</option>
+            <option value="20">20px</option>
+        </select>
+        <input type="color" id="font-color" title="Font Color">
+        <!-- Row/Column Management -->
+        <button id="add-row">Add Row</button>
+        <button id="delete-row">Delete Row</button>
+        <button id="add-column">Add Column</button>
+        <button id="delete-column">Delete Column</button>
+        <!-- Data quality functions -->
+        <button id="trim">TRIM</button>
+        <button id="upper">UPPER</button>
+        <button id="lower">LOWER</button>
+        <button id="remove-duplicates">Remove Duplicates</button>
+        <button id="find-replace">Find & Replace</button>
+    </div>
+      <div>
         <input type="text" id="formula-input" placeholder="Enter a formula (e.g., SUM(1,2,3))">
         <button id="submit-formula">Submit</button>
     </div>
     <div id="result-display" style="margin-top: 10px; font-weight: bold;"></div>
+    </div><!-- Find and Replace -->
+<button id="find-replace">Find & Replace</button>
 
+    <div id="sheet-container">
+        <table id="sheet">
+            <!-- Rows and columns will be dynamically generated -->
+        </table>
+    </div>
     <script>
-        // Handle formula submission
-        document.getElementById('submit-formula').addEventListener('click', () => {
-            const formulaInput = document.getElementById('formula-input').value.trim();
-            const resultDisplay = document.getElementById('result-display');
+        const sheet = document.getElementById('sheet');
 
-            if (!formulaInput) {
-                resultDisplay.textContent = 'Please enter a formula.';
-                return;
+        // Generates a blank sheet
+        function generateSheet(rows = 10, cols = 10) {
+            sheet.innerHTML = '';
+            for (let i = 0; i < rows; i++) {
+                const row = sheet.insertRow();
+                for (let j = 0; j < cols; j++) {
+                    const cell = row.insertCell();
+                    cell.contentEditable = true;
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                }
             }
+        }
 
-            try {
-                // Parse and evaluate the formula
-                const result = evalFormula(formulaInput);
-                resultDisplay.textContent = `Result: ${result}`;
-            } catch (error) {
-                resultDisplay.textContent = 'Invalid formula! Please use a valid mathematical expression.';
+        // Add a row at the end of the sheet
+        function addRow() {
+            const row = sheet.insertRow();
+            for (let j = 0; j < sheet.rows[0].cells.length; j++) {
+                const cell = row.insertCell();
+                cell.contentEditable = true;
             }
+        }
+
+        // Delete the last row
+        function deleteRow() {
+            if (sheet.rows.length > 1) {
+                sheet.deleteRow(sheet.rows.length - 1);
+            }
+        }
+
+        // Add a column at the end of the sheet
+        function addColumn() {
+            for (let i = 0; i < sheet.rows.length; i++) {
+                const cell = sheet.rows[i].insertCell();
+                cell.contentEditable = true;
+            }
+        }
+
+        // Delete the last column
+        function deleteColumn() {
+            if (sheet.rows[0].cells.length > 1) {
+                for (let i = 0; i < sheet.rows.length; i++) {
+                    sheet.rows[i].deleteCell(sheet.rows[i].cells.length - 1);
+                }
+            }
+        }
+
+        // Apply a style to selected cells
+        function applyStyle(styleProp, value) {
+            const selectedCells = document.querySelectorAll('#sheet td.selected');
+            selectedCells.forEach(cell => {
+                cell.style[styleProp] = value;
+            });
+        }
+
+        // Apply a function to the content of selected cells
+        function applyFunctionToSelectedCells(func) {
+            const selectedCells = document.querySelectorAll('#sheet td.selected');
+            selectedCells.forEach(cell => {
+                cell.textContent = func(cell.textContent);
+            });
+        }
+
+        // Event Listeners for Toolbar
+        document.getElementById('bold').addEventListener('click', () => {
+            applyStyle('fontWeight', 'bold');
         });
 
-        // Function to evaluate a formula
-        function evalFormula(formula) {
-            const args = parseArgs(formula);
+        document.getElementById('italic').addEventListener('click', () => {
+            applyStyle('fontStyle', 'italic');
+        });
 
-            if (formula.startsWith('SUM(')) {
-                return args.reduce((a, b) => a + b, 0);
-            } else if (formula.startsWith('AVERAGE(')) {
-                return args.reduce((a, b) => a + b, 0) / args.length;
-            } else if (formula.startsWith('MAX(')) {
-                return Math.max(...args);
-            } else if (formula.startsWith('MIN(')) {
-                return Math.min(...args);
-            } else if (formula.startsWith('COUNT(')) {
-                return args.length;
+        document.getElementById('underline').addEventListener('click', () => {
+            applyStyle('textDecoration', 'underline');
+        });
+
+        document.getElementById('font-size').addEventListener('change', (e) => {
+            applyStyle('fontSize', `${e.target.value}px`);
+        });
+
+        document.getElementById('font-color').addEventListener('input', (e) => {
+            applyStyle('color', e.target.value);
+        });
+
+        document.getElementById('add-row').addEventListener('click', addRow);
+        document.getElementById('delete-row').addEventListener('click', deleteRow);
+        document.getElementById('add-column').addEventListener('click', addColumn);
+        document.getElementById('delete-column').addEventListener('click', deleteColumn);
+
+        document.getElementById('trim').addEventListener('click', () => {
+            applyFunctionToSelectedCells(value => value.trim());
+        });
+
+        document.getElementById('upper').addEventListener('click', () => {
+            applyFunctionToSelectedCells(value => value.toUpperCase());
+        });
+
+        document.getElementById('lower').addEventListener('click', () => {
+            applyFunctionToSelectedCells(value => value.toLowerCase());
+        });
+
+        // Handle cell selection
+        sheet.addEventListener('click', (e) => {
+            if (e.target.tagName === 'TD') {
+                e.target.classList.toggle('selected');
+            }
+        });
+document.getElementById('find-replace').addEventListener('click', () => {
+    const searchValue = prompt("Enter the value to find:");
+    if (!searchValue) return;
+
+    const replaceValue = prompt("Enter the value to replace it with:");
+    const cells = sheet.querySelectorAll('td');
+
+    cells.forEach(cell => {
+        if (cell.textContent.includes(searchValue)) {
+            cell.textContent = cell.textContent.replace(new RegExp(searchValue, 'g'), replaceValue);
+        }
+    });
+
+    alert(`Replaced all occurrences of "${searchValue}" with "${replaceValue}".`);
+});
+const dataTypeMap = new Map(); // To store the data type for each cell.
+
+document.getElementById('data-type').addEventListener('change', () => {
+    const selectedCells = document.querySelectorAll('#sheet td.selected');
+    const selectedType = document.getElementById('data-type').value;
+
+    selectedCells.forEach(cell => {
+        const cellKey = `${cell.dataset.row}-${cell.dataset.col}`;
+        dataTypeMap.set(cellKey, selectedType); // Set the data type for the selected cells.
+        cell.dataset.type = selectedType; // Optionally add a visual marker.
+        cell.title = `Data Type: ${selectedType}`; // Tooltip for clarity.
+    });
+
+    alert(`Data type set to "${selectedType}" for selected cells.`);
+});
+
+// Validation logic during input
+sheet.addEventListener('input', (e) => {
+    if (e.target.tagName === 'TD') {
+        const cell = e.target;
+        const cellKey = `${cell.dataset.row}-${cell.dataset.col}`;
+        const expectedType = dataTypeMap.get(cellKey);
+
+        if (expectedType) {
+            const value = cell.textContent.trim();
+
+            if (!isValidData(value, expectedType)) {
+                cell.style.backgroundColor = '#ffcccc'; // Highlight invalid data.
+                alert(`Invalid data! Expected type: ${expectedType}`);
             } else {
-                throw new Error('Unsupported function');
+                cell.style.backgroundColor = ''; // Remove highlight if valid.
             }
         }
+    }
+});
 
-        // Helper function to parse arguments from the formula
-        function parseArgs(formula) {
-            const argsStr = formula.slice(formula.indexOf('(') + 1, formula.indexOf(')'));
-            const args = argsStr.split(',').map(arg => parseFloat(arg.trim()));
+// Helper function to validate data
+function isValidData(value, type) {
+    switch (type) {
+        case 'number':
+            return !isNaN(value) && value !== '';
+        case 'date':
+            return !isNaN(Date.parse(value));
+        case 'text':
+        default:
+            return true; // No validation needed for text.
+    }
+}
+// Handle formula submission
+document.getElementById('submit-formula').addEventListener('click', () => {
+    const formulaInput = document.getElementById('formula-input').value.trim();
+    const resultDisplay = document.getElementById('result-display');
 
-            if (args.some(isNaN)) {
-                throw new Error('Invalid arguments');
-            }
+    if (!formulaInput) {
+        resultDisplay.textContent = 'Please enter a formula.';
+        return;
+    }
 
-            return args;
-        }
+    try {
+        // Parse and evaluate the formula
+        const result = evalFormula(formulaInput);
+        resultDisplay.textContent = `Result: ${result}`;
+    } catch (error) {
+        resultDisplay.textContent = 'Invalid formula! Please use a valid mathematical expression.';
+    }
+});
+
+// Function to evaluate a formula
+function evalFormula(formula) {
+    const args = parseArgs(formula);
+
+    if (formula.startsWith('SUM(')) {
+        return args.reduce((a, b) => a + b, 0);
+    } else if (formula.startsWith('AVERAGE(')) {
+        return args.reduce((a, b) => a + b, 0) / args.length;
+    } else if (formula.startsWith('MAX(')) {
+        return Math.max(...args);
+    } else if (formula.startsWith('MIN(')) {
+        return Math.min(...args);
+    } else if (formula.startsWith('COUNT(')) {
+        return args.length;
+    } else {
+        throw new Error('Unsupported function');
+    }
+}
+
+// Helper function to parse arguments from the formula
+function parseArgs(formula) {
+    const argsStr = formula.slice(formula.indexOf('(') + 1, formula.indexOf(')'));
+    const args = argsStr.split(',').map(arg => parseFloat(arg.trim()));
+
+    if (args.some(isNaN)) {
+        throw new Error('Invalid arguments');
+    }
+
+    return args;
+}
+
+        generateSheet();
     </script>
 </body>
 </html>
